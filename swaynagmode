@@ -1,0 +1,320 @@
+#!/bin/bash
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+declare        prog="swaynagmode"
+declare     version="v0.1.0"
+declare     authors=("Maddison Hellstrom <github.com/b0o>")
+declare  repository="github.com/b0o/swaynagmode"
+declare     license="GPL"
+declare license_url="https://www.gnu.org/licenses/gpl-3.0.txt"
+
+mapfile -t usage << EOF
+$prog
+$version
+$repository
+
+A wrapper script which provides programmatic control
+over swaynag, intended for use with keyboard bindings.
+
+To create a nag, simply use swaynag options as normal - they will be parsed and passed through.
+
+To customise a nag, use these additional options:
+
+  short      long           description
+  -M <mode>  --mode         name of sway mode to trigger on init (default: Nag)
+  -D <mode>  --mode-default name of sway mode to trigger on exit (default: Default)
+             --no-mode      disable triggering of sway modes
+  -i <index> --initial      index of the initially selected button (default: 0)
+  -K         --no-kill      don't add a kill command to the button actions
+
+To control an existing nag, use the following options:
+
+  short           long       description
+  -x              --exit     dismisses the nag without performing any actions
+  -S <prev|next>  --select   selects the previous/next button, wrapping around each end
+                             (as specified in arguments left to right, buttons appear from right to
+                             left)
+  -C              --confirm  accepts the selected button (indicated with [brackets]) and executes its
+                             action.
+
+Global options:
+  short  long       description
+  -h     --help     display usage information
+  -v     --version  output version
+
+Example sway configuration:
+
+  # keys
+  set {
+    \$super Mod4
+    \$meta  Mod1
+    \$ctrl  Ctrl
+
+    \$left  h
+    \$down  j
+    \$up    k
+    \$right l
+  }
+  # nag
+  set {
+    \$nag         exec swaynagmode
+    \$nag_exit    \$nag --exit
+    \$nag_confirm \$nag --confirm
+    \$nag_select  \$nag --select
+  }
+  mode "nag" {
+    bindsym {
+      \$ctrl+c   exec \$nag_exit
+      q         exec \$nag_exit
+      Escape    exec \$nag_exit
+
+      Return    exec \$nag_confirm
+
+      Tab       exec \$nag_select prev
+      Shift+Tab exec \$nag_select next
+
+      \$left     exec \$nag_select next
+      \$right    exec \$nag_select prev
+
+      Left      exec \$nag_select next
+      Right     exec \$nag_select prev
+
+      \$up       exec \$nag_select next
+      \$down     exec \$nag_select prev
+
+      Up        exec \$nag_select next
+      Down      exec \$nag_select prev
+    }
+  }
+  bindsym {
+    \$super+Shift+q \$nag -t "warning" -m "Exit Sway?" -b "Exit" "swaymsg exit" -b "Reload" "swaymsg reload"
+  }
+
+
+(c) 2019-$(date +%Y) ${authors[*]}
+
+$license License ($license_url)
+EOF
+
+declare nag="swaynag"
+declare msg="swaymsg"
+
+declare mode_nag="Nag"
+declare mode_def="Default"
+
+declare -i no_mode=0
+declare -i no_kill=0
+
+declare -a args
+
+declare -a buttons
+declare -a actions
+declare -a methods
+declare -i btn_cursor=0
+
+declare -i nag_pid=-1
+
+declare M_TERM="TERM"
+declare M_NOTERM="NOTERM"
+
+function usage() {
+  printf '%s\n' "${usage[@]}"
+}
+
+function _pkill() {
+  pkill -ox "$@" > /dev/null 2>&1
+  return $?
+}
+
+function init() {
+  while [[ $# -gt 0 ]]; do
+    [[ $1 =~ ^(-x|--exit)$ ]] && {
+      _pkill -TERM "$prog"
+      exit
+    }
+
+    [[ $1 =~ ^(-C|--confirm)$ ]] && {
+      _pkill -HUP "$prog"
+      exit
+    }
+
+    [[ $1 =~ ^(-h|--help)$ ]] && {
+      echo "swaynagmode help:"
+      usage
+      echo -e "\nswaynag help:"
+      "$nag" "$1"
+      exit
+    }
+
+    [[ $1 =~ ^(-v|--version)$ ]] && {
+      echo "$prog $version"
+      "$nag" "$1"
+      exit
+    }
+
+    [[ $1 =~ ^(-S|--select)$ ]] && {
+      declare sig
+      case $2 in
+      "prev")
+        sig="USR1"
+        ;;
+      "next")
+        sig="USR2"
+        ;;
+      *)
+        echo "error: --select: expected one of (prev|next)" >&2
+        exit 1
+        ;;
+      esac
+      _pkill -"$sig" "$prog"
+      exit
+    }
+
+    [[ $1 =~ ^(-i|--initial)$ ]] && {
+      btn_cursor=$2
+      [[ $btn_cursor -ne $2 ]] && {
+        echo "error: --initial: expected int, got '$2'" >&2
+        exit 1
+      }
+      shift 2
+    }
+
+    [[ $1 =~ ^(-K|--no-kill)$ ]] && {
+      no_kill=1
+      shift
+    }
+
+    [[ $1 =~ ^(--no-mode)$ ]] && {
+      no_mode=1
+      shift
+    }
+
+    [[ $1 =~ ^(-M|--mode)$ ]] && {
+      mode_nag=$2
+      [[ -z $mode_nag ]] && {
+        echo "error: --mode: expected string, got '$2'" >&2
+        exit 1
+      }
+      shift 2
+    }
+
+    [[ $1 =~ ^(-D|--mode-default)$ ]] && {
+      mode_def=$2
+      [[ -z $mode_def ]] && {
+        echo "error: --mode-default: expected string, got '$2'" >&2
+        exit 1
+      }
+      shift 2
+    }
+
+    [[ $1 =~ ^(-b|--button|-B|--button-no-terminal)$ ]] && {
+      declare act_method=$M_NOTERM
+      [[ $1 =~ ^(-b|--button)$ && -n $TERMINAL ]] && {
+        act_method=$M_TERM
+      }
+      methods+=("$act_method")
+
+      shift
+      buttons+=("$1")
+      shift
+      actions+=("$1")
+      shift
+      continue
+    }
+
+    args+=("$1")
+    shift
+  done
+  [[ $btn_cursor -ge ${#buttons[@]} || $btn_cursor -lt 0 ]] && {
+    echo "error: --initial: index out of range: $btn_cursor" >&2
+    exit 1
+  }
+  [[ $(pgrep -xc "$prog") -gt 1 ]] && exit 1
+}
+
+function handle_exit() {
+  kill "$nag_pid" > /dev/null 2>&1 || true
+  [[ $no_mode -eq 0 ]] && "$msg" mode "$mode_def"
+}
+
+function handle_confirm() {
+  "$msg" exec "${actions[$btn_cursor]}" || {
+    echo "error: failed executing action" >&2
+    exit 1
+  }
+  [[ $no_kill -eq 0 ]] && {
+    exit
+  }
+  display_nag
+}
+
+function handle_select() {
+  declare -i dir=${1:-1}
+  declare -i dest=$((btn_cursor + dir))
+  if [[ $dest -ge ${#buttons[@]} ]]; then
+    dest=0
+  elif [[ $dest -lt 0 ]]; then
+    dest=$((${#buttons[@]} - 1))
+  fi
+  btn_cursor=$dest
+  display_nag
+}
+
+kill_nag()  {
+  [[ $nag_pid -eq -1 ]] && return
+  if ps "$nag_pid" > /dev/null 2>&1; then
+    kill "$nag_pid"
+    nag_pid=-1
+  fi
+}
+
+function display_nag()  {
+  declare -a nag_cmd
+  declare -i i=0
+  for btn in "${buttons[@]}"; do
+    declare cmd=""
+    declare mtd="${methods[$i]}"
+    if [[ $mtd == "$M_TERM" ]]; then
+      cmd="-b"
+    else
+      cmd="-B"
+    fi
+    declare txt="$btn"
+    declare act="${actions[$i]}"
+    [[ $no_kill -eq 0 ]] && {
+      act="$prog --exit && $act"
+    }
+    [[ $i -eq $btn_cursor ]] && {
+      txt="[${txt}]"
+    }
+    nag_cmd+=("${cmd}" "${txt}" "${act}")
+    ((i++))
+  done
+  kill_nag
+  [[ $no_mode -eq 0 ]] && $msg mode "$mode_nag"
+  echo "$nag" "${args[@]}" "${nag_cmd[@]}" &
+  "$nag" "${args[@]}" "${nag_cmd[@]}" &
+  nag_pid=$!
+  wait "$nag_pid"
+}
+
+init "$@"
+
+trap 'handle_exit'      EXIT
+trap 'handle_confirm'   HUP
+trap 'handle_select -1' USR1 # select prev
+trap 'handle_select  1' USR2 # select next
+
+display_nag
