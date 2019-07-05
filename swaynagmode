@@ -237,7 +237,7 @@ function init() {
     args+=("$1")
     shift
   done
-  [[ $btn_cursor -ge ${#buttons[@]} || $btn_cursor -lt 0 ]] && {
+  [[ ${#buttons[@]} -gt 0 && ($btn_cursor -ge ${#buttons[@]} || $btn_cursor -lt 0)  ]] && {
     echo "error: --initial: index out of range: $btn_cursor" >&2
     exit 1
   }
