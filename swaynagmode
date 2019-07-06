@@ -51,7 +51,8 @@ To control an existing nag, use the following options:
 
 Global options:
   short  long       description
-  -h     --help     display usage information
+  -h     --help     display usage information for $prog and swaynag
+  -H     --help-snm display usage information for $prog
   -v     --version  output version
 
 Caveats:
@@ -160,6 +161,11 @@ function init() {
       usage
       echo -e "\nswaynag help:"
       "$nag" "$1"
+      exit 0
+    }
+
+    [[ $1 =~ ^(-H|--help-snm)$ ]] && {
+      usage
       exit 0
     }
 
