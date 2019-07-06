@@ -141,13 +141,13 @@ function _pkill() {
 function init() {
   while [[ $# -gt 0 ]]; do
     [[ $1 =~ ^(-x|--exit)$ ]] && {
-      _pkill -TERM "$prog"
-      exit
+      _pkill -INT "$prog"
+      exit 0
     }
 
     [[ $1 =~ ^(-C|--confirm)$ ]] && {
       _pkill -HUP "$prog"
-      exit
+      exit 0
     }
 
     [[ $1 =~ ^(-h|--help)$ ]] && {
@@ -155,13 +155,13 @@ function init() {
       usage
       echo -e "\nswaynag help:"
       "$nag" "$1"
-      exit
+      exit 0
     }
 
     [[ $1 =~ ^(-v|--version)$ ]] && {
       echo "$prog $version"
       "$nag" "$1"
-      exit
+      exit 0
     }
 
     [[ $1 =~ ^(-S|--select)$ ]] && {
@@ -179,7 +179,7 @@ function init() {
         ;;
       esac
       _pkill -"$sig" "$prog"
-      exit
+      exit 0
     }
 
     [[ $1 =~ ^(-i|--initial)$ ]] && {
@@ -247,6 +247,7 @@ function init() {
 function handle_exit() {
   kill "$nag_pid" > /dev/null 2>&1 || true
   [[ $no_mode -eq 0 ]] && "$msg" mode "$mode_def"
+  exit 0
 }
 
 function handle_confirm() {
@@ -312,6 +313,7 @@ function display_nag()  {
 
 init "$@"
 
+trap 'exit 0'           INT  # die with grace
 trap 'handle_exit'      EXIT
 trap 'handle_confirm'   HUP
 trap 'handle_select -1' USR1 # select prev
