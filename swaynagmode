@@ -221,7 +221,7 @@ function init() {
 
     [[ $1 =~ ^(-b|--button|-B|--button-no-terminal)$ ]] && {
       declare act_method=$M_NOTERM
-      [[ $1 =~ ^(-b|--button)$ && -n $TERMINAL ]] && {
+      [[ $1 =~ ^(-b|--button)$ ]] && {
         act_method=$M_TERM
       }
       methods+=("$act_method")
@@ -250,13 +250,46 @@ function handle_exit() {
   exit 0
 }
 
-function handle_confirm() {
-  "$msg" exec "${actions[$btn_cursor]}" || {
-    echo "error: failed executing action" >&2
-    exit 1
+function exec_cmd() {
+  sh -c "$@" &
+  disown $!
+}
+
+function term_exec_cmd() {
+  declare term="$1"
+  declare action="$2"
+
+  declare script
+  script="$(mktemp "/tmp/${prog}XXXXXX")" || {
+    echo "error: failed to create temp script" >&2
+    return 1
   }
+  chmod u+rwx "$script"
+  cat > "$script" << EOF
+#!/bin/sh
+rm $script
+$action
+EOF
+
+  exec_cmd "$(printf "%s -e %s" "$term" "$script")"
+}
+
+function handle_confirm() {
+  declare cmd="${actions[$btn_cursor]}"
+  declare mtd="${methods[$btn_cursor]}"
+  if [[ $mtd == "$M_TERM" && -n $TERMINAL ]]; then
+    term_exec_cmd "$TERMINAL" "$cmd" || {
+      echo "warning: failed executing action via TERMINAL ($TERMINAL): $cmd" >&2
+      exit 1
+    }
+  else
+    exec_cmd "$cmd" || {
+      echo "warning: failed executing action: $cmd" >&2
+      exit 1
+    }
+  fi
   [[ $no_kill -eq 0 ]] && {
-    exit
+    exit 0
   }
   display_nag
 }
