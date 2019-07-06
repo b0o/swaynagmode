@@ -1,7 +1,8 @@
 swaynagmode
 -----------
 ```
-v0.1.0
+swaynagmode
+v0.1.1
 github.com/b0o/swaynagmode
 
 A wrapper script which provides programmatic control
@@ -14,7 +15,7 @@ To customise a nag, use these additional options:
   short      long           description
   -M <mode>  --mode         name of sway mode to trigger on init (default: Nag)
   -D <mode>  --mode-default name of sway mode to trigger on exit (default: Default)
-             --no-mode      disable triggering of sway mode
+             --no-mode      disable triggering of sway modes
   -i <index> --initial      index of the initially selected button (default: 0)
   -K         --no-kill      don't add a kill command to the button actions
 
@@ -30,8 +31,12 @@ To control an existing nag, use the following options:
 
 Global options:
   short  long       description
-  -h     --help     display usage information
+  -h     --help     display usage information for swaynagmode and swaynag
+  -H     --help-snm display usage information for swaynagmode
   -v     --version  output version
+
+Caveats:
+  - Only one instance of swaynagmode may be run at a time.
 
 Example sway configuration:
 
@@ -59,6 +64,8 @@ Example sway configuration:
       q         exec $nag_exit
       Escape    exec $nag_exit
 
+      $ctrl+d   mode "Default"
+
       Return    exec $nag_confirm
 
       Tab       exec $nag_select prev
@@ -81,12 +88,8 @@ Example sway configuration:
     $super+Shift+q $nag -t "warning" -m "Exit Sway?" -b "Exit" "swaymsg exit" -b "Reload" "swaymsg reload"
   }
 
+
 (c) 2019-2019 Maddison Hellstrom <github.com/b0o>
 
 GPL License (https://www.gnu.org/licenses/gpl-3.0.txt)
-
----
-
-swaynag help:
-see swaynag(1) for swaynag usage
 ```
