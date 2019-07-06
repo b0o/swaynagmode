@@ -54,6 +54,9 @@ Global options:
   -h     --help     display usage information
   -v     --version  output version
 
+Caveats:
+  - Only one instance of swaynagmode may be run at a time.
+
 Example sway configuration:
 
   # keys
@@ -79,6 +82,8 @@ Example sway configuration:
       \$ctrl+c   exec \$nag_exit
       q         exec \$nag_exit
       Escape    exec \$nag_exit
+
+      \$ctrl+d   mode "Default"
 
       Return    exec \$nag_confirm
 
@@ -338,7 +343,6 @@ function display_nag()  {
   done
   kill_nag
   [[ $no_mode -eq 0 ]] && $msg mode "$mode_nag"
-  echo "$nag" "${args[@]}" "${nag_cmd[@]}" &
   "$nag" "${args[@]}" "${nag_cmd[@]}" &
   nag_pid=$!
   wait "$nag_pid"
