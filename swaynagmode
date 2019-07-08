@@ -114,6 +114,9 @@ Example sway configuration:
 $license License ($license_url)
 EOF
 
+# XXX: this is a bodge to prevent swaynagmode from segfaulting when killing/restarting swaynag
+[[ -v WAYLAND_SOCKET ]] && unset WAYLAND_SOCKET
+
 declare nag="swaynag"
 declare msg="swaymsg"
 
@@ -132,16 +135,21 @@ declare -i btn_cursor=0
 
 declare -i nag_pid=-1
 
-declare M_TERM="TERM"
-declare M_NOTERM="NOTERM"
+declare M_TERM=TERM
+declare M_NOTERM=NOTERM
+
+declare S_CONF=HUP
+declare S_NEXT=CONT
+declare S_PREV=USR2
 
 function usage() {
   printf '%s\n' "${usage[@]}"
 }
 
 function _pkill() {
-  pkill -ox "$@" > /dev/null 2>&1
-  return $?
+  pkill -ox "$@" >&2 || {
+    echo "no such process: $*" >&2
+  }
 }
 
 function init() {
@@ -152,7 +160,7 @@ function init() {
     }
 
     [[ $1 =~ ^(-C|--confirm)$ ]] && {
-      _pkill -HUP "$prog"
+      _pkill -"$S_CONF" "$prog"
       exit 0
     }
 
@@ -179,10 +187,10 @@ function init() {
       declare sig
       case $2 in
       "prev")
-        sig="USR1"
+        sig=$S_PREV
         ;;
       "next")
-        sig="USR2"
+        sig=$S_NEXT
         ;;
       *)
         echo "error: --select: expected one of (prev|next)" >&2
@@ -365,15 +373,15 @@ function display_nag()  {
     "$nag" "${args[@]}" "${nag_cmd[@]}" &
   fi
   nag_pid=$!
-  wait "$nag_pid"
+  wait "$nag_pid" || true
 }
 
 init "$@"
 
 trap 'exit 0'           INT  # die with grace
 trap 'handle_exit'      EXIT
-trap 'handle_confirm'   HUP
-trap 'handle_select -1' USR1 # select prev
-trap 'handle_select  1' USR2 # select next
+trap 'handle_confirm'   $S_CONF
+trap 'handle_select -1' $S_PREV
+trap 'handle_select  1' $S_NEXT
 
 display_nag
