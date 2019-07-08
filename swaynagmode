@@ -245,6 +245,15 @@ function init() {
       continue
     }
 
+    [[ $1 =~ ^(-l|--detailed-message)$ ]] && {
+      detailed_msg="$(mktemp "/tmp/${prog}-msg-XXXXXX")" || {
+        echo "error: failed to create temp file for detailed message" >&2
+        return 1
+      }
+      chmod u+rw "$detailed_msg"
+      cat > "$detailed_msg"
+    }
+
     args+=("$1")
     shift
   done
@@ -258,6 +267,7 @@ function init() {
 function handle_exit() {
   kill "$nag_pid" > /dev/null 2>&1 || true
   [[ $no_mode -eq 0 ]] && "$msg" mode "$mode_def"
+  [[ -n $detailed_msg && -e $detailed_msg ]] && rm "$detailed_msg"
   exit 0
 }
 
@@ -349,7 +359,11 @@ function display_nag()  {
   done
   kill_nag
   [[ $no_mode -eq 0 ]] && $msg mode "$mode_nag"
-  "$nag" "${args[@]}" "${nag_cmd[@]}" &
+  if [[ -n "$detailed_msg" ]]; then
+    "$nag" "${args[@]}" "${nag_cmd[@]}" < "$detailed_msg" &
+  else
+    "$nag" "${args[@]}" "${nag_cmd[@]}" &
+  fi
   nag_pid=$!
   wait "$nag_pid"
 }
