@@ -40,17 +40,6 @@ Caveats:
 
 Example sway configuration:
 
-  # keys
-  set {
-    $super Mod4
-    $meta  Mod1
-    $ctrl  Ctrl
-
-    $left  h
-    $down  j
-    $up    k
-    $right l
-  }
   # nag
   set {
     $nag         exec swaynagmode
@@ -60,33 +49,28 @@ Example sway configuration:
   }
   mode "nag" {
     bindsym {
-      $ctrl+c   exec $nag_exit
-      q         exec $nag_exit
-      Escape    exec $nag_exit
+      Ctrl+d    mode "Default"
 
-      $ctrl+d   mode "Default"
+      Ctrl+c    $nag_exit
+      q         $nag_exit
+      Escape    $nag_exit
 
-      Return    exec $nag_confirm
+      Return    $nag_confirm
 
-      Tab       exec $nag_select prev
-      Shift+Tab exec $nag_select next
+      Tab       $nag_select prev
+      Shift+Tab $nag_select next
 
-      $left     exec $nag_select next
-      $right    exec $nag_select prev
+      Left      $nag_select next
+      Right     $nag_select prev
 
-      Left      exec $nag_select next
-      Right     exec $nag_select prev
-
-      $up       exec $nag_select next
-      $down     exec $nag_select prev
-
-      Up        exec $nag_select next
-      Down      exec $nag_select prev
+      Up        $nag_select next
+      Down      $nag_select prev
     }
   }
   bindsym {
     $super+Shift+q $nag -t "warning" -m "Exit Sway?" -b "Exit" "swaymsg exit" -b "Reload" "swaymsg reload"
   }
+  swaynag_command $nag
 
 
 (c) 2019-2019 Maddison Hellstrom <github.com/b0o>
