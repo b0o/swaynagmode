@@ -281,7 +281,7 @@ function term_exec_cmd() {
   declare action="$2"
 
   declare script
-  script="$(mktemp "/tmp/${prog}XXXXXX")" || {
+  script="$(mktemp "/tmp/${prog}-cmd-XXXXXX")" || {
     echo "error: failed to create temp script" >&2
     return 1
   }
