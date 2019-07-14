@@ -18,6 +18,7 @@ To customise a nag, use these additional options:
              --no-mode      disable triggering of sway modes
   -i <index> --initial      index of the initially selected button (default: 0)
   -K         --no-kill      don't add a kill command to the button actions
+  -R         --reverse      reverse the button order
 
 To control an existing nag, use the following options:
 
@@ -70,7 +71,9 @@ Example sway configuration:
   bindsym {
     $super+Shift+q $nag -t "warning" -m "Exit Sway?" -b "Exit" "swaymsg exit" -b "Reload" "swaymsg reload"
   }
-  swaynag_command $nag
+  # -R is recommended for swaynag_command so that, upon a syntax error in your sway config, the
+  # 'Reload Sway' option will be initially selected instead of the 'Exit Sway' option
+  swaynag_command $nag -R
 
 
 (c) 2019-2019 Maddison Hellstrom <github.com/b0o>
