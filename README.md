@@ -2,7 +2,7 @@ swaynagmode
 -----------
 ```
 swaynagmode
-v0.2.0
+v0.2.1
 github.com/b0o/swaynagmode
 
 A wrapper script which provides programmatic control
