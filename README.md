@@ -14,6 +14,7 @@ To customise a nag, use these additional options:
 
   short      long           description
   -M <mode>  --mode         name of sway mode to trigger on init (default: nag)
+                            NOTE: beginning in sway version 1.2, mode names are case-sensitive
   -D <mode>  --mode-default name of sway mode to trigger on exit (default: default)
              --no-mode      disable triggering of sway modes
   -i <index> --initial      index of the initially selected button (default: 0)
