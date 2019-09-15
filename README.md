@@ -2,7 +2,7 @@ swaynagmode
 -----------
 ```
 swaynagmode
-v0.1.3
+v0.2.0
 github.com/b0o/swaynagmode
 
 A wrapper script which provides programmatic control
@@ -13,8 +13,8 @@ To create a nag, simply use swaynag options as normal - they will be parsed and 
 To customise a nag, use these additional options:
 
   short      long           description
-  -M <mode>  --mode         name of sway mode to trigger on init (default: Nag)
-  -D <mode>  --mode-default name of sway mode to trigger on exit (default: Default)
+  -M <mode>  --mode         name of sway mode to trigger on init (default: nag)
+  -D <mode>  --mode-default name of sway mode to trigger on exit (default: default)
              --no-mode      disable triggering of sway modes
   -i <index> --initial      index of the initially selected button (default: 0)
   -K         --no-kill      don't add a kill command to the button actions
@@ -50,7 +50,7 @@ Example sway configuration:
   }
   mode "nag" {
     bindsym {
-      Ctrl+d    mode "Default"
+      Ctrl+d    mode "default"
 
       Ctrl+c    $nag_exit
       q         $nag_exit
