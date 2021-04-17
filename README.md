@@ -77,7 +77,7 @@ Example sway configuration:
   swaynag_command $nag -R
 
 
-(c) 2019-2019 Maddison Hellstrom <github.com/b0o>
+(c) 2019-2021 Maddison Hellstrom <github.com/b0o>
 
 GPL License (https://www.gnu.org/licenses/gpl-3.0.txt)
 ```
