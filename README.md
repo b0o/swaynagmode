@@ -1,5 +1,5 @@
-swaynagmode
------------
+## swaynagmode
+
 ```
 swaynagmode
 v0.2.1
@@ -12,24 +12,26 @@ To create a nag, simply use swaynag options as normal - they will be parsed and 
 
 To customise a nag, use these additional options:
 
-  short      long           description
-  -M <mode>  --mode         name of sway mode to trigger on init (default: nag)
-                            NOTE: beginning in sway version 1.2, mode names are case-sensitive
-  -D <mode>  --mode-default name of sway mode to trigger on exit (default: default)
-             --no-mode      disable triggering of sway modes
-  -i <index> --initial      index of the initially selected button (default: 0)
-  -K         --no-kill      don't add a kill command to the button actions
-  -R         --reverse      reverse the button order
+  short      long              description
+  -M <mode>  --mode            name of sway mode to trigger on init (default: nag)
+                               NOTE: beginning in sway version 1.2, mode names are case-sensitive
+  -D <mode>  --mode-default    name of sway mode to trigger on exit (default: default)
+             --no-mode         disable triggering of sway modes
+  -i <index> --initial         index of the initially selected button (default: 0)
+  -K         --no-kill         don't add a kill command to the button actions
+  -R         --reverse         reverse the button order
+             --template-active template to render currently selected button text into (default: '[%s]')
+             --template        template to render other (non-selected) button text into (default: '%s')
 
 To control an existing nag, use the following options:
 
-  short           long       description
-  -x              --exit     dismisses the nag without performing any actions
-  -S <prev|next>  --select   selects the previous/next button, wrapping around each end
-                             (as specified in arguments left to right, buttons appear from right to
-                             left)
-  -C              --confirm  accepts the selected button (indicated with [brackets]) and executes its
-                             action.
+  short           long         description
+  -x              --exit       dismisses the nag without performing any actions
+  -S <prev|next>  --select     selects the previous/next button, wrapping around each end
+                               (as specified in arguments left to right, buttons appear from right to
+                               left)
+  -C              --confirm    accepts the selected button (indicated with [brackets]) and executes its
+                               action.
 
 Global options:
   short  long       description
@@ -48,6 +50,9 @@ Example sway configuration:
     $nag_exit    $nag --exit
     $nag_confirm $nag --confirm
     $nag_select  $nag --select
+
+    # If you want fancy-pants nags, check out the --template parameters, as well as swaynag's native appearance options:
+    # $nag         exec swaynagmode --template '  %s  ' --template-active '➔ <b>%s</b>  ' --font "JetBrainsMono NF 9"
   }
   mode "nag" {
     bindsym {
